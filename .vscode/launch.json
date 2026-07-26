@@ -4,13 +4,13 @@
         
         {
             "type": "java",
-            "name": "Spring Boot-FoodieapiApplication<foodieapi>",
+            "name": "Spring Boot-urban-bites",
             "request": "launch",
-            "cwd": "${workspaceFolder}/foodieapi",
-            "mainClass": "in.keshavcreates.foodieapi.FoodieapiApplication",
-            "projectName": "foodieapi",
+            "cwd": "${workspaceFolder}/urban-bites",
+            "mainClass": "in.keshavcreates.urban-bites.UrbanBitesApplication",
+            "projectName": "urban-bites",
             "args": "",
-            "envFile":"${workspaceFolder}/foodieapi/.env"
+            "envFile":"${workspaceFolder}/urban-bites/.env"
         }
     ]
 }
