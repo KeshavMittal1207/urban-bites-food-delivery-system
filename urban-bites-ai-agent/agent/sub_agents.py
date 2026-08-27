@@ -1,6 +1,5 @@
 import os
 from dotenv import load_dotenv
-# from langchain_groq import ChatGroq
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.prebuilt import create_react_agent
 from mcp_tools import (
@@ -21,14 +20,14 @@ from mcp_tools import (
 
 load_dotenv()
 
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-GROQ_MODEL = os.getenv("GROQ_MODEL_NAME")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL_NAME")
 
 # Shared LLM instance for ReAct Agents
-groq_llm = ChatGoogleGenerativeAI(
-    model=GROQ_MODEL,
+gemini_llm = ChatGoogleGenerativeAI(
+    model=GEMINI_MODEL,
     temperature=0.0,
-    api_key=GROQ_API_KEY
+    api_key=GEMINI_API_KEY
 )
 
 # -------------------------------------------------------------------------
@@ -45,7 +44,7 @@ Your role:
 """
 
 recommendation_agent = create_react_agent(
-    groq_llm,
+    gemini_llm,
     tools=recommendation_tools,
     prompt=recommendation_prompt
 )
@@ -65,7 +64,7 @@ Your role:
 """
 
 cart_agent = create_react_agent(
-    groq_llm,
+    gemini_llm,
     tools=cart_tools,
     prompt=cart_prompt
 )
@@ -113,7 +112,7 @@ Your role:
 """
 
 order_support_agent = create_react_agent(
-    groq_llm,
+    gemini_llm,
     tools=order_tools,
     prompt=order_prompt
 )

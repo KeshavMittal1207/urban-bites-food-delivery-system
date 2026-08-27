@@ -8,7 +8,7 @@ from agent.graph import agent_graph
 
 app = FastAPI(
     title="Urban Bites Multi-Agent AI Microservice",
-    description="Groq-Powered LangGraph Multi-Agent System with Custom FastMCP Tools for Urban Bites",
+    description="Gemini-Powered LangGraph Multi-Agent System with Custom FastMCP Tools for Urban Bites",
     version="1.0.0"
 )
 
@@ -29,7 +29,7 @@ def health_check():
     return {
         "status": "online",
         "service": "Urban Bites Multi-Agent AI Microservice",
-        "model": "Groq LLaMA-3.3-70B",
+        "model": "Google Gemini 3.7 Flash",
         "agents": ["SupervisorRouter", "RecommendationAgent", "CartAgent", "OrderSupportAgent"]
     }
 
@@ -41,11 +41,6 @@ async def chat_with_multi_agent(request: ChatRequest, authorization: str = Heade
     token = ""
     if authorization and authorization.startswith("Bearer "):
         token = authorization.replace("Bearer ", "").strip()
-    elif authorization:
-        token = authorization.strip()
-
-    from mcp_tools import set_active_token
-    set_active_token(token)
 
     user_prompt = request.prompt.strip()
 
@@ -60,7 +55,6 @@ async def chat_with_multi_agent(request: ChatRequest, authorization: str = Heade
         config: RunnableConfig = {"configurable": {"thread_id": thread_id}}
         final_state = agent_graph.invoke(initial_state, config=config)
         
-        # Safely extract the AI reply
         ai_reply = None
         for msg in reversed(final_state.get("messages", [])):
             if isinstance(msg, AIMessage) or (hasattr(msg, "type") and msg.type == "ai"):

@@ -1,15 +1,15 @@
 import os
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
-# from langchain_groq import ChatGroq
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import SystemMessage, AIMessage
 from .state import AgentState
 
 load_dotenv()
 
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-GROQ_MODEL = os.getenv("GROQ_MODEL_NAME")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL_NAME")
+
 
 # Pydantic schema for structured output router classification
 class RouteResponse(BaseModel):
@@ -18,12 +18,11 @@ class RouteResponse(BaseModel):
     )
     reasoning: str = Field(description="Brief explanation for the routing decision.")
 
-# Initialize Groq LLM Classifier
+# Initialize Gemini LLM Classifier
 llm = ChatGoogleGenerativeAI(
-    
-    model=GROQ_MODEL,
+    model=GEMINI_MODEL,
     temperature=0.0,
-    api_key=GROQ_API_KEY
+    api_key=GEMINI_API_KEY
 )
 
 structured_llm = llm.with_structured_output(RouteResponse)
@@ -66,9 +65,9 @@ def supervisor_node(state: AgentState) -> dict:
     if next_target in ["general_assistant", "FINISH"]:
         try:
             general_llm = ChatGoogleGenerativeAI(
-                model=GROQ_MODEL,
+                model=GEMINI_MODEL,
     temperature=0.0,
-    api_key=GROQ_API_KEY
+    api_key=GEMINI_API_KEY
             )
             response = general_llm.invoke([SystemMessage(content=GENERAL_ASSISTANT_SYSTEM_PROMPT)] + messages)
             return {
