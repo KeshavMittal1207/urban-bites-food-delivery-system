@@ -11,4 +11,5 @@ import lombok.NoArgsConstructor;
 @Builder
 public class CartRequest {
     private String foodId;
+    private Integer quantity;
 }

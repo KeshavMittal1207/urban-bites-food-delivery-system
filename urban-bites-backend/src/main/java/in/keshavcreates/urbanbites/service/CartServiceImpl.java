@@ -26,7 +26,8 @@ public class CartServiceImpl implements CartService{
         String loggedInUserId = userService.getUserId();
         CartEntity cartEntity = cartRepository.findByUserId(loggedInUserId).orElseGet(() -> CartEntity.builder().userId(loggedInUserId).items(new HashMap<>()).build());
         Map<String, Integer> items = cartEntity.getItems();
-        items.put(cartRequest.getFoodId() , items.getOrDefault(cartRequest.getFoodId() ,0) + 1);
+        int qtyToAdd = (cartRequest.getQuantity() != null && cartRequest.getQuantity() > 0) ? cartRequest.getQuantity() : 1;
+        items.put(cartRequest.getFoodId(), items.getOrDefault(cartRequest.getFoodId(), 0) + qtyToAdd);
         cartEntity.setItems(items);
         cartEntity = cartRepository.save(cartEntity);
         return convertToResponse(cartEntity);
@@ -67,8 +68,10 @@ public class CartServiceImpl implements CartService{
         String loggedInUserId = userService.getUserId();
         CartEntity cartEntity = cartRepository.findByUserId(loggedInUserId).orElseThrow(() -> new RuntimeException("Cart not found"));
         Map<String, Integer> items = cartEntity.getItems();
-        if (items.getOrDefault(cartRequest.getFoodId(), 0) > 1) {
-            items.put(cartRequest.getFoodId(), items.get(cartRequest.getFoodId()) - 1);
+        int qtyToRemove = (cartRequest.getQuantity() != null && cartRequest.getQuantity() > 0) ? cartRequest.getQuantity() : 1;
+        int currentQty = items.getOrDefault(cartRequest.getFoodId(), 0);
+        if (currentQty > qtyToRemove) {
+            items.put(cartRequest.getFoodId(), currentQty - qtyToRemove);
         } else {
             items.remove(cartRequest.getFoodId());
         }

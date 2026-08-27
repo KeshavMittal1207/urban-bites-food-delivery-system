@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react'
 import MenuBar from './components/MenuBar/MenuBar.jsx'
+import AIAssistantDrawer from './components/AIAssistantDrawer/AIAssistantDrawer.jsx'
 import { Routes, Route } from 'react-router-dom'
 import Home from './pages/Home/Home'
 import Contact from './pages/Contact/Contact'
@@ -27,6 +28,7 @@ const App = () => {
     <div>
       <MenuBar/>
       <ToastContainer />
+      <AIAssistantDrawer />
       <Routes>
         <Route path="/" element={<Home/>} />
         <Route path="/contact" element={<Contact/>} />
