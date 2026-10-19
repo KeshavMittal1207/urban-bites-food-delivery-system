@@ -1,6 +1,5 @@
 package in.keshavcreates.urbanbites.service;
 
-import in.keshavcreates.urbanbites.entity.FoodEntity;
 import in.keshavcreates.urbanbites.io.FoodRequest;
 import in.keshavcreates.urbanbites.io.FoodResponse;
 import in.keshavcreates.urbanbites.io.UploadedImage;
