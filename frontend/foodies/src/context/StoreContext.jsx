@@ -45,24 +45,27 @@ export const StoreContextProvider = (props) => {
     loadFoods();
   }, []);
 
-  useEffect(() => {
-    if (!token) {
+  const fetchCartData = async () => {
+    const activeToken = localStorage.getItem("authToken") || token;
+    if (!activeToken) {
       setQuantities({});
       return;
     }
-    async function loadCart() {
-      try {
-        const cartRes = await fetchCartList();
-        if (cartRes && cartRes.items) {
-          setQuantities(cartRes.items);
-        }
-      } catch (err) {
-        console.error("Failed to load cart", err);
+    try {
+      const cartRes = await fetchCartList();
+      if (cartRes && cartRes.items) {
+        setQuantities(cartRes.items);
+      } else {
+        setQuantities({});
       }
+    } catch (err) {
+      console.error("Failed to load cart", err);
     }
-    loadCart();
-  }, [token]);
+  };
 
+  useEffect(() => {
+    fetchCartData();
+  }, [token]);
 
   useEffect(() => {
     if (token) {
@@ -92,6 +95,7 @@ export const StoreContextProvider = (props) => {
     getCartTotal,
     token,
     setToken,
+    fetchCartData,
   };
 
   return (

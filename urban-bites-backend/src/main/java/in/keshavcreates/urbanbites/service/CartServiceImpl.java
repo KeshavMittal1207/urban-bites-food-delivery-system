@@ -58,9 +58,6 @@ public class CartServiceImpl implements CartService{
         if(cartEntity.isPresent()){
             cartRepository.delete(cartEntity.get());
         }
-        else{
-            throw new IllegalStateException("Cart does not exist");
-        }
     }
 
     @Override

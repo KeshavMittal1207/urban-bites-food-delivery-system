@@ -13,8 +13,8 @@ import java.time.LocalDateTime;
 @Entity
 @Builder
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 public class ReviewEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
