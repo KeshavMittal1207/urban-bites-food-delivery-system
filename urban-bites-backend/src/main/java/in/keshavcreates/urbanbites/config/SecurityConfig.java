@@ -66,6 +66,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/foods/deleteFood/**").hasRole("ADMIN")
                         .requestMatchers("/api/orders/all").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/orders/*/status").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/foods/health").permitAll()
+                        .requestMatchers(HttpMethod.HEAD, "/api/foods/health").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session

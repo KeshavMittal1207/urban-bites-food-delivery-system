@@ -2,9 +2,11 @@ package in.keshavcreates.urbanbites.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import in.keshavcreates.urbanbites.io.FoodRequest;
 import in.keshavcreates.urbanbites.io.FoodResponse;
 import in.keshavcreates.urbanbites.service.FoodService;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -13,12 +15,23 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
+
 @RestController
 @RequestMapping("/api/foods")
 public class FoodController {
 
     @Autowired
     private FoodService foodService;
+
+    @GetMapping("/health")
+    public ResponseEntity<Void> health() {
+        return ResponseEntity.ok().build();
+    }
+    
 
     @PostMapping("")
     public FoodResponse addFood(@RequestPart("food") String foodString,

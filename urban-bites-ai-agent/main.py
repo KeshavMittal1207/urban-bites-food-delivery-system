@@ -170,7 +170,7 @@ def extract_text_from_message(content) -> str:
     return str(content or "")
 
 
-@app.get("/")
+@app.api_route("/" , methods=["GET" , "HEAD"])
 def health_check():
     return {
         "status": "online",
