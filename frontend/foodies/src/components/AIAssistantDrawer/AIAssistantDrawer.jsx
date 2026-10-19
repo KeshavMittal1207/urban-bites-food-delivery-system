@@ -1,4 +1,6 @@
 import React, { useState, useContext, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { StoreContext } from '../../context/StoreContext';
 import { verifyOrderPayment } from '../../service/orderService';
 import axios from 'axios';
@@ -246,13 +248,25 @@ const AIAssistantDrawer = () => {
                       ⚡ {m.agent}
                     </span>
                   )}
-                  <p className="mb-0 text-break">
-                    {typeof m.text === 'string'
-                      ? m.text
-                      : (typeof m.text === 'object' && m.text !== null
-                          ? (m.text.text || JSON.stringify(m.text))
-                          : String(m.text || ''))}
-                  </p>
+                  {m.sender === 'ai' ? (
+                    <div className="markdown-content">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {typeof m.text === 'string'
+                          ? m.text
+                          : (typeof m.text === 'object' && m.text !== null
+                              ? (m.text.text || JSON.stringify(m.text))
+                              : String(m.text || ''))}
+                      </ReactMarkdown>
+                    </div>
+                  ) : (
+                    <p className="mb-0 text-break">
+                      {typeof m.text === 'string'
+                        ? m.text
+                        : (typeof m.text === 'object' && m.text !== null
+                            ? (m.text.text || JSON.stringify(m.text))
+                            : String(m.text || ''))}
+                    </p>
+                  )}
                   {m.paymentData && (
                     <button
                       className="btn btn-warning btn-sm mt-2 d-inline-flex align-items-center gap-2 fw-bold shadow-sm"
