@@ -8,47 +8,89 @@ import './AIAssistantDrawer.css';
 
 const AI_AGENT_URL = import.meta.env.VITE_AGENT_API_URL || 'http://localhost:8000';
 
+const DEFAULT_WELCOME_MESSAGE = {
+  sender: 'ai',
+  text: '🤖 Hi! I am your Urban Bites AI Assistant. Ask me for food recommendations under your budget, to manage your cart & addresses, or to place an order!',
+  agent: 'AI'
+};
+
+const getGuestId = () => {
+  let gid = sessionStorage.getItem('urban_bites_guest_ai_id');
+  if (!gid) {
+    gid = 'guest_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now();
+    sessionStorage.setItem('urban_bites_guest_ai_id', gid);
+  }
+  return gid;
+};
+
 const AIAssistantDrawer = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([
-    {
-      sender: 'ai',
-      text: '🤖 Hi! I am your Urban Bites AI Assistant. Ask me for food recommendations under your budget, to manage your cart & addresses, or to place an order!',
-      agent: 'AI'
-    }
-
-  ]);
+  const [messages, setMessages] = useState([DEFAULT_WELCOME_MESSAGE]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const { token, fetchCartData } = useContext(StoreContext);
 
-  useEffect(() => {
-    const loadBackendHistory = async () => {
-      try {
-        const currentToken = localStorage.getItem('authToken') || token || '';
-        const headers = currentToken ? { Authorization: `Bearer ${currentToken}` } : {};
-        const res = await axios.get(`${AI_AGENT_URL}/api/agent/history`, { headers });
-        if (res.data.history && res.data.history.length > 0) {
-          const formatted = res.data.history.map(item => ({
-            ...item,
-            text: typeof item.text === 'string'
-              ? item.text
-              : (Array.isArray(item.text)
-                  ? item.text.map(t => (t && t.text) || JSON.stringify(t)).join('')
-                  : (typeof item.text === 'object' && item.text !== null
-                      ? (item.text.text || JSON.stringify(item.text))
-                      : String(item.text || '')))
-          }));
-          setMessages(formatted);
-        }
-      } catch (err) {
-        console.log("No remote history found, using local state");
+  const loadBackendHistory = async () => {
+    try {
+      const currentToken = localStorage.getItem('authToken') || token || '';
+      const guestId = getGuestId();
+      const headers = {
+        'x-guest-id': guestId,
+        ...(currentToken ? { Authorization: `Bearer ${currentToken}` } : {})
+      };
+      const res = await axios.get(`${AI_AGENT_URL}/api/agent/history`, { headers });
+      if (res.data.history && res.data.history.length > 0) {
+        const formatted = res.data.history.map(item => ({
+          ...item,
+          text: typeof item.text === 'string'
+            ? item.text
+            : (Array.isArray(item.text)
+                ? item.text.map(t => (t && t.text) || JSON.stringify(t)).join('')
+                : (typeof item.text === 'object' && item.text !== null
+                    ? (item.text.text || JSON.stringify(item.text))
+                    : String(item.text || '')))
+        }));
+        setMessages(formatted);
+      } else {
+        // Explicitly reset to default message for a user with zero past messages
+        setMessages([DEFAULT_WELCOME_MESSAGE]);
       }
-    };
+    } catch (err) {
+      console.log("No remote history found, defaulting to fresh welcome message");
+      setMessages([DEFAULT_WELCOME_MESSAGE]);
+    }
+  };
+
+  // Reset messages whenever authentication token changes (login, logout, switch account)
+  useEffect(() => {
+    setMessages([DEFAULT_WELCOME_MESSAGE]);
+    if (isOpen) {
+      loadBackendHistory();
+    }
+  }, [token]);
+
+  // Load history whenever drawer opens
+  useEffect(() => {
     if (isOpen) {
       loadBackendHistory();
     }
   }, [isOpen]);
+
+  const handleClearChat = async () => {
+    try {
+      const currentToken = localStorage.getItem('authToken') || token || '';
+      const guestId = getGuestId();
+      const headers = {
+        'x-guest-id': guestId,
+        ...(currentToken ? { Authorization: `Bearer ${currentToken}` } : {})
+      };
+      await axios.delete(`${AI_AGENT_URL}/api/agent/history`, { headers });
+    } catch (e) {
+      console.log("Could not clear remote history:", e);
+    } finally {
+      setMessages([DEFAULT_WELCOME_MESSAGE]);
+    }
+  };
   // Load Razorpay Checkout SDK script
   useEffect(() => {
     if (!window.Razorpay) {
@@ -187,10 +229,15 @@ const AIAssistantDrawer = () => {
 
     try {
       const activeToken = localStorage.getItem('authToken') || token || '';
-      const headers = activeToken ? { Authorization: `Bearer ${activeToken}` } : {};
+      const guestId = getGuestId();
+      const headers = {
+        'x-guest-id': guestId,
+        ...(activeToken ? { Authorization: `Bearer ${activeToken}` } : {})
+      };
       const response = await axios.post(`${AI_AGENT_URL}/api/agent/chat`, {
         prompt: currentPrompt,
-        token: activeToken
+        token: activeToken,
+        guest_id: guestId
       }, { headers });
 
       const aiMsg = {
@@ -236,7 +283,17 @@ const AIAssistantDrawer = () => {
                 <h6 className="mb-0 fw-bold text-white">Urban Bites AI Assistant</h6>
               </div>
             </div>
-            <button className="btn-close btn-close-white" onClick={() => setIsOpen(false)}></button>
+            <div className="d-flex align-items-center gap-2">
+              <button
+                className="btn btn-sm btn-outline-light d-flex align-items-center gap-1 py-1 px-2 border-0 opacity-75 hover-opacity-100"
+                title="Clear Conversation History"
+                onClick={handleClearChat}
+                style={{ fontSize: '0.75rem', backgroundColor: 'rgba(255,255,255,0.1)' }}
+              >
+                <i className="bi bi-arrow-clockwise"></i> Clear
+              </button>
+              <button className="btn-close btn-close-white" onClick={() => setIsOpen(false)}></button>
+            </div>
           </div>
 
           <div className="ai-chat-body p-3">

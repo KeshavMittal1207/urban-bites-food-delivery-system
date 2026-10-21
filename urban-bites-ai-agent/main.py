@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.runnables import RunnableConfig
-from agent.graph import agent_graph
+from agent import agent_graph, checkpointer
 from mcp_tools import init_mcp_client, close_mcp_client, set_active_token
 
 
@@ -43,6 +43,7 @@ from typing import Optional
 class ChatRequest(BaseModel):
     prompt: str
     token: Optional[str] = None
+    guest_id: Optional[str] = None
 
 
 def normalize_token(auth_header: Optional[str] = None, body_token: Optional[str] = None) -> str:
@@ -59,23 +60,31 @@ def normalize_token(auth_header: Optional[str] = None, body_token: Optional[str]
     return cleaned
 
 
-def get_session_thread_id(token: str) -> str:
-    if not token:
-        return "guest_session"
-    try:
-        parts = token.split(".")
-        if len(parts) >= 2:
-            payload_b64 = parts[1]
-            rem = len(payload_b64) % 4
-            if rem > 0:
-                payload_b64 += "=" * (4 - rem)
-            data = json.loads(base64.urlsafe_b64decode(payload_b64).decode("utf-8"))
-            sub = data.get("sub")
-            if sub:
-                return f"user_{sub}"
-    except Exception:
-        pass
-    return token[:40]
+def get_session_thread_id(token: str, guest_id: Optional[str] = None) -> str:
+    """Derives a strictly isolated session thread ID for LangGraph checkpointing."""
+    if token:
+        try:
+            parts = token.split(".")
+            if len(parts) >= 2:
+                payload_b64 = parts[1]
+                rem = len(payload_b64) % 4
+                if rem > 0:
+                    payload_b64 += "=" * (4 - rem)
+                data = json.loads(base64.urlsafe_b64decode(payload_b64).decode("utf-8"))
+                sub = data.get("sub")
+                if sub:
+                    return f"user_{sub.strip().lower()}"
+        except Exception:
+            pass
+        return f"token_{token[:32]}"
+
+    if guest_id and str(guest_id).strip():
+        cleaned_guest = str(guest_id).strip()
+        if not cleaned_guest.startswith("guest_"):
+            cleaned_guest = f"guest_{cleaned_guest}"
+        return cleaned_guest
+
+    return "guest_session"
 
 
 import os
@@ -182,13 +191,18 @@ def health_check():
 
 
 @app.post("/api/agent/chat")
-async def chat_with_multi_agent(request: ChatRequest, authorization: str = Header(None)):
+async def chat_with_multi_agent(
+    request: ChatRequest,
+    authorization: str = Header(None),
+    x_guest_id: Optional[str] = Header(None)
+):
     if not request.prompt or not request.prompt.strip():
         raise HTTPException(status_code=400, detail="Prompt message cannot be empty")
 
     token = normalize_token(authorization, request.token)
     set_active_token(token)
 
+    guest_id = request.guest_id or x_guest_id
     user_prompt = request.prompt.strip()
 
     initial_state = {
@@ -198,7 +212,7 @@ async def chat_with_multi_agent(request: ChatRequest, authorization: str = Heade
     }
 
     try:
-        thread_id = get_session_thread_id(token)
+        thread_id = get_session_thread_id(token, guest_id=guest_id)
         config: RunnableConfig = {"configurable": {"thread_id": thread_id}}
         final_state = await agent_graph.ainvoke(initial_state, config=config)
 
@@ -225,6 +239,7 @@ async def chat_with_multi_agent(request: ChatRequest, authorization: str = Heade
             "reply": str(ai_reply),
             "routed_agent": routed_agent,
             "payment_data": payment_data,
+            "thread_id": thread_id,
             "status": "success"
         }
     except Exception as e:
@@ -233,9 +248,12 @@ async def chat_with_multi_agent(request: ChatRequest, authorization: str = Heade
 
 
 @app.get("/api/agent/history")
-async def get_chat_history(authorization: str = Header(None)):
+async def get_chat_history(
+    authorization: str = Header(None),
+    x_guest_id: Optional[str] = Header(None)
+):
     token = normalize_token(authorization)
-    thread_id = get_session_thread_id(token)
+    thread_id = get_session_thread_id(token, guest_id=x_guest_id)
     config: RunnableConfig = {"configurable": {"thread_id": thread_id}}
 
     state = agent_graph.get_state(config)
@@ -252,7 +270,24 @@ async def get_chat_history(authorization: str = Header(None)):
                         "text": text_content.strip(),
                         "agent": "SupervisorRouter" if sender == "ai" else None
                     })
-    return {"history": messages}
+    return {"history": messages, "thread_id": thread_id}
+
+
+@app.delete("/api/agent/history")
+async def clear_chat_history(
+    authorization: str = Header(None),
+    x_guest_id: Optional[str] = Header(None)
+):
+    token = normalize_token(authorization)
+    thread_id = get_session_thread_id(token, guest_id=x_guest_id)
+    cleared = False
+    try:
+        if hasattr(checkpointer, "delete_thread"):
+            checkpointer.delete_thread(thread_id)
+            cleared = True
+    except Exception as e:
+        print(f"Warning: could not delete thread {thread_id} from checkpointer: {e}")
+    return {"status": "success", "message": f"Cleared chat history for {thread_id}", "cleared": cleared}
 
 
 if __name__ == "__main__":

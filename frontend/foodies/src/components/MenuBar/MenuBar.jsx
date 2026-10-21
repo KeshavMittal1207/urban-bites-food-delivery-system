@@ -12,6 +12,7 @@ const MenuBar = () => {
   const handleLogout = () => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('authEmail');
+    sessionStorage.removeItem('urban_bites_guest_ai_id');
     setToken('');
     navigate('/login');
   };
