@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { StoreContext } from '../../context/StoreContext';
@@ -30,6 +30,13 @@ const AIAssistantDrawer = () => {
   const [loading, setLoading] = useState(false);
   const [paidOrderIds, setPaidOrderIds] = useState(() => new Set());
   const { token, fetchCartData } = useContext(StoreContext);
+  const messagesEndRef = useRef(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, loading, isOpen]);
 
   const markOrderAsPaid = (paymentData) => {
     if (!paymentData) return;
@@ -308,7 +315,7 @@ const AIAssistantDrawer = () => {
   };
 
   return (
-    <div className="ai-assistant-wrapper">
+    <div className={`ai-assistant-wrapper ${isOpen ? 'open' : ''}`}>
       <button className="ai-fab-btn shadow-lg" onClick={() => setIsOpen(!isOpen)}>
         <i className="bi bi-robot me-2"></i>
         <span>AI Concierge</span>
@@ -389,6 +396,7 @@ const AIAssistantDrawer = () => {
                 <span>...</span>
               </div>
             )}
+            <div ref={messagesEndRef} />
           </div>
 
           <div className="ai-chat-footer p-3 border-top bg-light rounded-bottom-4 d-flex gap-2">
