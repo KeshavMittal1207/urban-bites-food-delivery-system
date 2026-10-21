@@ -47,9 +47,14 @@ def clean_token(val) -> str:
     return cleaned
 
 
+def get_active_token() -> str:
+    """Returns the current active normalized JWT token from context, global fallback, or env."""
+    return clean_token(current_user_jwt.get("")) or clean_token(_active_jwt_global) or clean_token(os.getenv("URBAN_BITES_JWT", ""))
+
+
 def get_auth_header(token_override: str = None) -> dict:
     """Retrieves and normalizes the Authorization header from context, override, or global fallback."""
-    token = clean_token(token_override) or clean_token(current_user_jwt.get("")) or clean_token(_active_jwt_global) or clean_token(os.getenv("URBAN_BITES_JWT", ""))
+    token = clean_token(token_override) or get_active_token()
     if token:
         return {"Authorization": f"Bearer {token}"}
     return {}

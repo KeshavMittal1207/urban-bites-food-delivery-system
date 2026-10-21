@@ -8,7 +8,7 @@ from .sub_agents import (
     get_cart_agent,
     get_order_support_agent,
 )
-from mcp_tools import set_active_token, current_user_jwt, _active_jwt_global
+from mcp_tools import set_active_token, get_active_token, clean_token
 
 
 def filter_clean_history(messages):
@@ -44,7 +44,7 @@ async def run_recommendation_node(state: AgentState) -> dict:
 
 
 async def run_cart_node(state: AgentState) -> dict:
-    user_jwt = state.get("user_jwt", "") or current_user_jwt.get("") or _active_jwt_global
+    user_jwt = clean_token(state.get("user_jwt", "")) or get_active_token()
     clean_history = filter_clean_history(state.get("messages", []))
 
     if user_jwt:
@@ -73,7 +73,7 @@ async def run_cart_node(state: AgentState) -> dict:
 
 
 async def run_order_node(state: AgentState) -> dict:
-    user_jwt = state.get("user_jwt", "") or current_user_jwt.get("") or _active_jwt_global
+    user_jwt = clean_token(state.get("user_jwt", "")) or get_active_token()
     clean_history = filter_clean_history(state.get("messages", []))
 
     if user_jwt:
