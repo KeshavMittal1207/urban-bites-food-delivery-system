@@ -22,6 +22,13 @@ Routing Rules:
 1. 'recommendation_agent': For queries asking for food recommendations, menu exploration, budget planning, dietary preferences (veg, high-protein, desserts), or dish details.
 2. 'cart_agent': For requests to add items to cart, remove items from cart, clear cart, or view current cart items.
 3. 'order_support_agent': For placing orders, checkout (Cash on Delivery or Online/Razorpay), checking saved delivery addresses, saving/deleting addresses, tracking placed orders, order status, or order cancellation.
+   CRITICAL FOR MULTI-TURN CHECKOUT:
+   If the conversation is in the process of ordering, checkout, or cart preparation, and the user provides details such as:
+   - Phone number (e.g. 10-digit number like "8700007777")
+   - Email address (e.g. "user@example.com")
+   - Payment method (e.g. "CARD", "CASH", "COD", "Razorpay")
+   - Delivery address or address confirmation
+   You MUST route to 'order_support_agent' so it can complete the order placement!
 4. 'general_assistant': For greetings (e.g. 'hi', 'hello', 'hey'), generic pleasantries ('thank you', 'bye'), questions about what the assistant can do, or off-topic / irrelevant questions not related to the restaurant.
 """
 
@@ -63,10 +70,17 @@ def classify_intent_heuristic(user_text: str) -> str:
         'place order', 'checkout', 'buy now', 'order now', 'confirm order',
         'my order', 'track order', 'cancel order', 'order status', 'order history',
         'delivery address', 'saved address', 'save address', 'delete address',
-        'razorpay', 'pay with', 'cash on delivery', 'cod', 'card payment', 'online payment'
+        'razorpay', 'pay with', 'cash on delivery', 'cod', 'card payment', 'online payment',
+        'card', 'cash'
     ]):
         return 'order_support_agent'
     if re.search(r'\b(order|buy)\s+\d+', t) or re.search(r'\b(order|buy)\s+[a-z]+', t):
+        return 'order_support_agent'
+
+    # Follow-up contact info provided during order checkout (email, phone, payment terms)
+    has_email = bool(re.search(r'[\w\.-]+@[\w\.-]+\.\w+', t))
+    has_phone = bool(re.search(r'\b\d{10}\b', t)) or any(k in t for k in ['phone', 'mobile', 'contact'])
+    if has_email or has_phone:
         return 'order_support_agent'
 
     # 3. Recommendations & Menu exploration

@@ -34,17 +34,24 @@ def set_active_token(token: str):
         _active_jwt_global = ""
 
 
+def clean_token(val) -> str:
+    if not val:
+        return ""
+    cleaned = str(val).strip()
+    if (cleaned.startswith('"') and cleaned.endswith('"')) or (cleaned.startswith("'") and cleaned.endswith("'")):
+        cleaned = cleaned[1:-1].strip()
+    while cleaned.lower().startswith("bearer "):
+        cleaned = cleaned[7:].strip()
+    if cleaned.lower() in ["none", "null", "undefined", ""]:
+        return ""
+    return cleaned
+
+
 def get_auth_header(token_override: str = None) -> dict:
-    """Retrieves and normalizes the Authorization header from context, override, or environment."""
-    token = token_override or current_user_jwt.get("") or _active_jwt_global or os.getenv("URBAN_BITES_JWT", "")
+    """Retrieves and normalizes the Authorization header from context, override, or global fallback."""
+    token = clean_token(token_override) or clean_token(current_user_jwt.get("")) or clean_token(_active_jwt_global) or clean_token(os.getenv("URBAN_BITES_JWT", ""))
     if token:
-        cleaned = str(token).strip()
-        if (cleaned.startswith('"') and cleaned.endswith('"')) or (cleaned.startswith("'") and cleaned.endswith("'")):
-            cleaned = cleaned[1:-1].strip()
-        while cleaned.lower().startswith("bearer "):
-            cleaned = cleaned[7:].strip()
-        if cleaned and cleaned.lower() not in ["none", "null", "undefined", ""]:
-            return {"Authorization": f"Bearer {cleaned}"}
+        return {"Authorization": f"Bearer {token}"}
     return {}
 
 
@@ -77,9 +84,9 @@ def filter_menu_by_budget(max_budget: float, category: str = None) -> dict:
 
 
 @mcp.tool()
-def get_user_cart(jwt_token: str = None) -> dict:
+def get_user_cart() -> dict:
     """Fetches all food items and their respective quantities currently present in the user's active shopping cart."""
-    headers = get_auth_header(jwt_token)
+    headers = get_auth_header()
     if not headers:
         return {"success": False, "error": "User is not logged in. Please sign in to your Urban Bites account to view your cart."}
 
@@ -95,9 +102,9 @@ def get_user_cart(jwt_token: str = None) -> dict:
 
 
 @mcp.tool()
-def add_item_to_cart(food_id: str, quantity: int = 1, jwt_token: str = None) -> dict:
+def add_item_to_cart(food_id: str, quantity: int = 1) -> dict:
     """Adds a specific food item ID to the user's active cart with the specified quantity (e.g. 1, 2, 4). Default is 1."""
-    headers = get_auth_header(jwt_token)
+    headers = get_auth_header()
     if not headers:
         return {"success": False, "error": "User is not logged in. Please sign in to your Urban Bites account to add items to your cart."}
 
@@ -116,9 +123,9 @@ def add_item_to_cart(food_id: str, quantity: int = 1, jwt_token: str = None) -> 
 
 
 @mcp.tool()
-def set_cart_item_quantity(food_id: str, quantity: int, jwt_token: str = None) -> dict:
+def set_cart_item_quantity(food_id: str, quantity: int) -> dict:
     """Sets the exact target quantity of a specific food item in the user's cart (e.g. 2). Prevents duplicate additions."""
-    headers = get_auth_header(jwt_token)
+    headers = get_auth_header()
     if not headers:
         return {"success": False, "error": "User is not logged in. Please sign in to your Urban Bites account."}
 
@@ -170,9 +177,9 @@ def set_cart_item_quantity(food_id: str, quantity: int, jwt_token: str = None) -
 
 
 @mcp.tool()
-def remove_item_from_cart(food_id: str, quantity: int = 1, jwt_token: str = None) -> dict:
+def remove_item_from_cart(food_id: str, quantity: int = 1) -> dict:
     """Removes a specific food item ID or reduces its quantity from the user's active cart. Default quantity is 1."""
-    headers = get_auth_header(jwt_token)
+    headers = get_auth_header()
     if not headers:
         return {"success": False, "error": "User is not logged in. Please sign in to modify your cart."}
 
@@ -191,9 +198,9 @@ def remove_item_from_cart(food_id: str, quantity: int = 1, jwt_token: str = None
 
 
 @mcp.tool()
-def clear_user_cart(jwt_token: str = None) -> dict:
+def clear_user_cart() -> dict:
     """Clears all food items from the user's active shopping cart."""
-    headers = get_auth_header(jwt_token)
+    headers = get_auth_header()
     if not headers:
         return {"success": False, "error": "User is not logged in. Please sign in to clear your cart."}
 
@@ -209,9 +216,9 @@ def clear_user_cart(jwt_token: str = None) -> dict:
 
 
 @mcp.tool()
-def get_user_orders(jwt_token: str = None) -> dict:
+def get_user_orders() -> dict:
     """Fetches all customer order history and active order tracking details."""
-    headers = get_auth_header(jwt_token)
+    headers = get_auth_header()
     if not headers:
         return {"success": False, "error": "User is not logged in. Please sign in to view your orders."}
 
@@ -227,9 +234,9 @@ def get_user_orders(jwt_token: str = None) -> dict:
 
 
 @mcp.tool()
-def cancel_order(order_id: str, jwt_token: str = None) -> dict:
+def cancel_order(order_id: str) -> dict:
     """Cancels an existing placed customer order by order ID."""
-    headers = get_auth_header(jwt_token)
+    headers = get_auth_header()
     if not headers:
         return {"success": False, "error": "User is not logged in. Please sign in to cancel an order."}
 
@@ -245,9 +252,9 @@ def cancel_order(order_id: str, jwt_token: str = None) -> dict:
 
 
 @mcp.tool()
-def place_order(address: str, phoneNumber: str, email: str, paymentMethod: str, jwt_token: str = None) -> dict:
+def place_order(address: str, phoneNumber: str, email: str, paymentMethod: str) -> dict:
     """Places an order for all items present in the user's active cart. paymentMethod must be 'CASH' or 'CARD'."""
-    headers = get_auth_header(jwt_token)
+    headers = get_auth_header()
     if not headers:
         return {"success": False, "error": "User is not logged in. Please sign in to place an order."}
 
@@ -281,9 +288,9 @@ def place_order(address: str, phoneNumber: str, email: str, paymentMethod: str, 
 
 
 @mcp.tool()
-def get_saved_addresses(jwt_token: str = None) -> dict:
+def get_saved_addresses() -> dict:
     """Fetches the user's saved delivery addresses (e.g. Home, Office, Other)."""
-    headers = get_auth_header(jwt_token)
+    headers = get_auth_header()
     if not headers:
         return {"success": False, "error": "User is not logged in. Please sign in to view saved addresses."}
 
@@ -299,9 +306,9 @@ def get_saved_addresses(jwt_token: str = None) -> dict:
 
 
 @mcp.tool()
-def save_user_address(address_type: str, address: str, jwt_token: str = None) -> dict:
+def save_user_address(address_type: str, address: str) -> dict:
     """Saves or updates a user delivery address under a label like 'Home', 'Office', or 'Other'."""
-    headers = get_auth_header(jwt_token)
+    headers = get_auth_header()
     if not headers:
         return {"success": False, "error": "User is not logged in. Please sign in to save an address."}
 
@@ -318,9 +325,9 @@ def save_user_address(address_type: str, address: str, jwt_token: str = None) ->
 
 
 @mcp.tool()
-def delete_user_address(address_type: str, jwt_token: str = None) -> dict:
+def delete_user_address(address_type: str) -> dict:
     """Deletes a saved delivery address by type label (e.g. 'Home', 'Office')."""
-    headers = get_auth_header(jwt_token)
+    headers = get_auth_header()
     if not headers:
         return {"success": False, "error": "User is not logged in. Please sign in to delete an address."}
 
@@ -336,9 +343,9 @@ def delete_user_address(address_type: str, jwt_token: str = None) -> dict:
 
 
 @mcp.tool()
-def verify_order_payment(razorpay_order_id: str, razorpay_payment_id: str, razorpay_signature: str, jwt_token: str = None) -> dict:
+def verify_order_payment(razorpay_order_id: str, razorpay_payment_id: str, razorpay_signature: str) -> dict:
     """Verifies a completed Razorpay online payment signature for an order."""
-    headers = get_auth_header(jwt_token)
+    headers = get_auth_header()
     if not headers:
         return {"success": False, "error": "User is not logged in. Please sign in to verify payments."}
 

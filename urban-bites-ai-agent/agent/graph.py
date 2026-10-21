@@ -8,7 +8,7 @@ from .sub_agents import (
     get_cart_agent,
     get_order_support_agent,
 )
-from mcp_tools import set_active_token
+from mcp_tools import set_active_token, current_user_jwt, _active_jwt_global
 
 
 def filter_clean_history(messages):
@@ -44,7 +44,7 @@ async def run_recommendation_node(state: AgentState) -> dict:
 
 
 async def run_cart_node(state: AgentState) -> dict:
-    user_jwt = state.get("user_jwt", "")
+    user_jwt = state.get("user_jwt", "") or current_user_jwt.get("") or _active_jwt_global
     clean_history = filter_clean_history(state.get("messages", []))
 
     if user_jwt:
@@ -53,7 +53,6 @@ async def run_cart_node(state: AgentState) -> dict:
             content="User is authenticated. Cart tools automatically operate on their active account without needing token parameters."
         )
     else:
-        set_active_token("")
         auth_msg = SystemMessage(
             content="User is NOT currently authenticated. If the user requests cart modifications, politely ask them to log in first."
         )
@@ -74,7 +73,7 @@ async def run_cart_node(state: AgentState) -> dict:
 
 
 async def run_order_node(state: AgentState) -> dict:
-    user_jwt = state.get("user_jwt", "")
+    user_jwt = state.get("user_jwt", "") or current_user_jwt.get("") or _active_jwt_global
     clean_history = filter_clean_history(state.get("messages", []))
 
     if user_jwt:
@@ -83,7 +82,6 @@ async def run_order_node(state: AgentState) -> dict:
             content="User is authenticated. Order, address, and payment tools automatically operate on their active account without needing token parameters."
         )
     else:
-        set_active_token("")
         auth_msg = SystemMessage(
             content="User is NOT currently authenticated. If the user requests order details, order placement, or address operations, politely ask them to log in first."
         )
