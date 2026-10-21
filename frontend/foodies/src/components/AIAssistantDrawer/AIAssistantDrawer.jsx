@@ -28,7 +28,35 @@ const AIAssistantDrawer = () => {
   const [messages, setMessages] = useState([DEFAULT_WELCOME_MESSAGE]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [paidOrderIds, setPaidOrderIds] = useState(() => new Set());
   const { token, fetchCartData } = useContext(StoreContext);
+
+  const markOrderAsPaid = (paymentData) => {
+    if (!paymentData) return;
+    const rId = String(paymentData.razorpayOrderId || '');
+    const oId = String(paymentData.orderId || '');
+
+    setPaidOrderIds(prev => {
+      const updated = new Set(prev);
+      if (rId) updated.add(rId);
+      if (oId) updated.add(oId);
+      return updated;
+    });
+
+    setMessages(prev => prev.map(msg => {
+      if (msg.paymentData) {
+        const msgRId = String(msg.paymentData.razorpayOrderId || '');
+        const msgOId = String(msg.paymentData.orderId || '');
+        if ((rId && msgRId === rId) || (oId && msgOId === oId)) {
+          return {
+            ...msg,
+            paymentData: { ...msg.paymentData, paymentStatus: 'PAID' }
+          };
+        }
+      }
+      return msg;
+    }));
+  };
 
   const loadBackendHistory = async () => {
     try {
@@ -105,7 +133,17 @@ const AIAssistantDrawer = () => {
     if (!paymentData || !paymentData.razorpayOrderId) return;
     const orderStatus = (paymentData.orderStatus || '').toUpperCase();
     const paymentStatus = (paymentData.paymentStatus || '').toUpperCase();
-    if (orderStatus === 'CANCELED' || orderStatus === 'CANCELLED' || paymentStatus === 'REFUNDED') {
+    const rId = String(paymentData.razorpayOrderId || '');
+    const oId = String(paymentData.orderId || '');
+
+    if (
+      orderStatus === 'CANCELED' ||
+      orderStatus === 'CANCELLED' ||
+      paymentStatus === 'REFUNDED' ||
+      paymentStatus === 'PAID' ||
+      paidOrderIds.has(rId) ||
+      paidOrderIds.has(oId)
+    ) {
       return;
     }
 
@@ -125,6 +163,7 @@ const AIAssistantDrawer = () => {
             razorpayPaymentId: 'pay_mock_' + Math.random().toString(36).substr(2, 9),
             razorpaySignature: 'sig_mock_12345'
           });
+          markOrderAsPaid(paymentData);
           setMessages(prev => [
             ...prev,
             {
@@ -166,6 +205,7 @@ const AIAssistantDrawer = () => {
             razorpayPaymentId: response.razorpay_payment_id,
             razorpaySignature: response.razorpay_signature
           });
+          markOrderAsPaid(paymentData);
           setMessages(prev => [
             ...prev,
             {
@@ -325,12 +365,20 @@ const AIAssistantDrawer = () => {
                     </p>
                   )}
                   {m.paymentData && (
-                    <button
-                      className="btn btn-warning btn-sm mt-2 d-inline-flex align-items-center gap-2 fw-bold shadow-sm"
-                      onClick={() => handleRazorpayPayment(m.paymentData)}
-                    >
-                      <i className="bi bi-credit-card-2-front"></i> Complete Payment (₹{m.paymentData.amount})
-                    </button>
+                    ((m.paymentData.paymentStatus || '').toUpperCase() === 'PAID' ||
+                     paidOrderIds.has(String(m.paymentData.razorpayOrderId)) ||
+                     paidOrderIds.has(String(m.paymentData.orderId))) ? (
+                      <div className="mt-2 d-inline-flex align-items-center gap-1 px-2 py-1 rounded-pill bg-success-subtle text-success small border border-success-subtle fw-semibold" style={{ fontSize: '0.8rem' }}>
+                        <i className="bi bi-check-circle-fill"></i> Payment Completed
+                      </div>
+                    ) : (
+                      <button
+                        className="btn btn-warning btn-sm mt-2 d-inline-flex align-items-center gap-2 fw-bold shadow-sm"
+                        onClick={() => handleRazorpayPayment(m.paymentData)}
+                      >
+                        <i className="bi bi-credit-card-2-front"></i> Complete Payment (₹{m.paymentData.amount})
+                      </button>
+                    )
                   )}
                 </div>
               </div>

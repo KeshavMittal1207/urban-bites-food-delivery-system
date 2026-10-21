@@ -92,9 +92,10 @@ import os
 def extract_payment_data(messages) -> Optional[dict]:
     """Robustly extracts Razorpay payment checkout details ONLY from new order placement tool execution messages."""
     for msg in reversed(messages):
-        # 1. Skip if this message is from cancel_order, get_user_orders, etc.
+        # 1. Skip unless this is specifically a tool execution message from place_order
+        msg_type = getattr(msg, "type", "")
         msg_name = getattr(msg, "name", "")
-        if msg_name and msg_name != "place_order":
+        if msg_type != "tool" or msg_name != "place_order":
             continue
 
         contents_to_check = []
@@ -214,16 +215,33 @@ async def chat_with_multi_agent(
     try:
         thread_id = get_session_thread_id(token, guest_id=guest_id)
         config: RunnableConfig = {"configurable": {"thread_id": thread_id}}
+
+        # Inspect message count prior to this turn to isolate current-turn tool executions
+        prior_state = agent_graph.get_state(config)
+        prior_msg_count = len(prior_state.values.get("messages", [])) if (prior_state and prior_state.values) else 0
+
         final_state = await agent_graph.ainvoke(initial_state, config=config)
 
-        # Safely extract the AI reply: find the last AI message with actual non-empty text content
+        # Slice to isolate new messages generated specifically during THIS turn
+        all_messages = final_state.get("messages", [])
+        new_messages = all_messages[prior_msg_count:]
+
+        # Safely extract the AI reply from new messages first
         ai_reply = None
-        for msg in reversed(final_state.get("messages", [])):
+        for msg in reversed(new_messages):
             if isinstance(msg, AIMessage) or (hasattr(msg, "type") and getattr(msg, "type") == "ai"):
                 extracted = extract_text_from_message(getattr(msg, "content", ""))
                 if extracted and extracted.strip():
                     ai_reply = extracted.strip()
                     break
+
+        if not ai_reply:
+            for msg in reversed(all_messages):
+                if isinstance(msg, AIMessage) or (hasattr(msg, "type") and getattr(msg, "type") == "ai"):
+                    extracted = extract_text_from_message(getattr(msg, "content", ""))
+                    if extracted and extracted.strip():
+                        ai_reply = extracted.strip()
+                        break
 
         if not ai_reply:
             ai_reply = "Hello! I am your Urban Bites Food Assistant. How can I help you explore our menu, manage your cart, or track your orders today?"
@@ -232,8 +250,8 @@ async def chat_with_multi_agent(
         if routed_agent in ["general_assistant", "supervisor", "FINISH"]:
             routed_agent = "SupervisorRouter"
 
-        # Check for Razorpay payment details in tool messages
-        payment_data = extract_payment_data(final_state.get("messages", []))
+        # Check for Razorpay payment details ONLY in tool messages generated in THIS turn
+        payment_data = extract_payment_data(new_messages)
 
         return {
             "reply": str(ai_reply),
