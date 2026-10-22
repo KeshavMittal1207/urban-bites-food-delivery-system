@@ -16,8 +16,8 @@ const Cart = () => {
   const grandTotal = parseFloat((subtotal + packingCharges + deliveryFee + tax - discount).toFixed(2));
 
   return (
-    <div className="container py-5">
-      <h1 className="mb-5 fw-bold text-dark">Your Shopping Cart</h1>
+    <div className="container py-3 py-md-5">
+      <h1 className="mb-3 mb-md-5 fw-bold text-dark fs-2 fs-md-1">Your Shopping Cart</h1>
       {cartItems.length === 0 ? (
         <div className="text-center py-5 shadow-sm rounded-4 bg-light">
           <i className="bi bi-cart-x display-1 text-muted mb-4"></i>
@@ -32,7 +32,7 @@ const Cart = () => {
           {/* Cart Items List */}
           <div className="col-lg-8">
             <div className="card border-0 shadow-sm rounded-4 mb-4">
-              <div className="card-body p-4">
+              <div className="card-body p-3 p-md-4">
                 {cartItems.map((food) => {
                   const quantity = quantities[food.id];
                   return (

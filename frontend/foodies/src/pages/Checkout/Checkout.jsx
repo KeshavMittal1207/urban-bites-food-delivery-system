@@ -186,18 +186,18 @@ const Checkout = () => {
   };
 
   return (
-    <div className="container py-5">
-      <h1 className="mb-5 fw-bold text-dark" style={{ fontFamily: "'Outfit', sans-serif" }}>Secure Checkout</h1>
-      <div className="row g-5">
+    <div className="container py-3 py-md-5">
+      <h1 className="mb-3 mb-md-5 fw-bold text-dark fs-2 fs-md-1" style={{ fontFamily: "'Outfit', sans-serif" }}>Secure Checkout</h1>
+      <div className="row g-4 g-md-5">
         {/* Delivery Address & Payment Form */}
         <div className="col-lg-7">
           <div className="card border-0 shadow-sm rounded-4">
-            <div className="card-body p-4 p-sm-5">
+            <div className="card-body p-3 p-sm-4 p-md-5">
               
               {/* Quick Select Saved Address */}
               <div className="mb-4">
                 <label className="form-label text-muted small fw-bold mb-2">Select Saved Address</label>
-                <div className="d-flex gap-2">
+                <div className="d-flex flex-wrap gap-2">
                   {['Home', 'Office', 'Other'].map(type => (
                     <button
                       key={type}

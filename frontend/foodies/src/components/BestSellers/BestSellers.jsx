@@ -13,13 +13,13 @@ const BestSellers = () => {
   }
 
   return (
-    <div className="best-sellers-section my-5 p-4 rounded-4" style={{ background: '#f8f9fa', border: '1px solid rgba(45, 106, 79, 0.08)' }}>
-      <div className="d-flex align-items-center justify-content-between mb-4">
+    <div className="best-sellers-section my-3 my-md-4 p-3 p-md-4 rounded-4" style={{ background: '#f8f9fa', border: '1px solid rgba(45, 106, 79, 0.08)' }}>
+      <div className="d-flex align-items-center justify-content-between mb-3 mb-md-4">
         <div>
           <span className="badge bg-warning text-dark px-2.5 py-1.5 rounded-pill fw-bold text-uppercase mb-2" style={{ fontSize: '0.7rem', letterSpacing: '1px' }}>
             <i className="bi bi-fire me-1"></i>Most Ordered
           </span>
-          <h2 className="fw-bold m-0" style={{ color: '#1b4332', fontFamily: "'Outfit', sans-serif" }}>
+          <h2 className="fw-bold m-0 fs-3 fs-md-2" style={{ color: '#1b4332', fontFamily: "'Outfit', sans-serif" }}>
             Chef's Signature Best Sellers
           </h2>
           <p className="text-muted small m-0 mt-1">Our highly recommended pure vegetarian house specials in Delhi.</p>

@@ -140,6 +140,27 @@ body {
   padding: 1.25rem !important;
 }
 
+.food-card-image {
+  height: 200px;
+  width: 100%;
+  object-fit: cover;
+}
+
+@media (max-width: 768px) {
+  .food-card-image {
+    height: 125px !important;
+  }
+  .card {
+    border-radius: 14px !important;
+  }
+  .card-img-top {
+    border-radius: 14px 14px 0 0 !important;
+  }
+  .hero-jumbotron {
+    border-radius: 16px !important;
+  }
+}
+
 .text-bg-warning {
   background: linear-gradient(135deg, var(--accent-gold) 0%, var(--gold-hover) 100%) !important;
   color: #fff !important;
